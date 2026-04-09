@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="養蜂日記">
+<title>養蜂日記</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
+  background: #FFF8EE;
+  color: #2C2C2A;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+header {
+  background: #FAC775;
+  padding: 52px 16px 14px;
+  text-align: center;
+}
+header h1 { font-size: 18px; font-weight: 600; color: #412402; }
+header p { font-size: 12px; color: #633806; margin-top: 2px; }
+
+.tab-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: #fff;
+  border-top: 0.5px solid #D3D1C7;
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 100;
+}
+.tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0 6px;
+  font-size: 10px;
+  color: #888780;
+  cursor: pointer;
+  border: none;
+  background: none;
+  gap: 3px;
+}
+.tab-btn.active { color: #BA7517; }
+.tab-btn svg { width: 22px; height: 22px; }
+
+.content { padding: 16px; }
+
+.card {
+  background: #fff;
+  border-radius: 14px;
+  border: 0.5px solid #D3D1C7;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.field { margin-bottom: 14px; }
+.field label { font-size: 12px; color: #5F5E5A; display: block; margin-bottom: 5px; }
+select, input[type="text"], input[type="number"], input[type="date"], input[type="url"], textarea {
+  width: 100%;
+  border: 0.5px solid #B4B2A9;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 16px;
+  font-family: inherit;
+  background: #fff;
+  color: #2C2C2A;
+  appearance: none;
+  -webkit-appearance: none;
+}
+textarea { resize: none; line-height: 1.6; min-height: 80px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.btn-save {
+  width: 100%;
+  background: #FAC775;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #412402;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.btn-save:active { background: #EF9F27; }
+
+.hint { font-size: 11px; color: #888780; margin-top: 4px; line-height: 1.4; }
+
+.log-item { padding: 12px 0; border-bottom: 0.5px solid #D3D1C7; }
+.log-item:last-child { border-bottom: none; }
+.log-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 5px; }
+.log-date { font-size: 12px; color: #888780; }
+.box-label { font-size: 12px; font-weight: 600; color: #5F5E5A; }
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.badge-obs { background: #E6F1FB; color: #0C447C; }
+.badge-work { background: #EAF3DE; color: #27500A; }
+.badge-honey { background: #FAEEDA; color: #633806; }
+.log-text { font-size: 14px; color: #5F5E5A; line-height: 1.5; }
+.video-link {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 13px; color: #185FA5; margin-top: 6px;
+  text-decoration: none;
+}
+.empty { text-align: center; color: #888780; font-size: 14px; padding: 2rem 0; }
+
+.filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.stat-card { background: #fff; border-radius: 12px; border: 0.5px solid #D3D1C7; padding: 14px; text-align: center; }
+.stat-num { font-size: 26px; font-weight: 600; color: #2C2C2A; }
+.stat-label { font-size: 11px; color: #888780; margin-top: 3px; }
+
+.toast {
+  position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+  background: #2C2C2A; color: #fff; border-radius: 20px;
+  padding: 10px 20px; font-size: 14px;
+  opacity: 0; transition: opacity 0.3s;
+  pointer-events: none; white-space: nowrap; z-index: 200;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🍯 養蜂管理日記</h1>
+  <p>巣箱5箱の記録</p>
+</header>
+
+<div class="content">
+
+  <!-- 記録タブ -->
+  <div id="tab-record">
+    <div class="card">
+      <div class="row2">
+        <div class="field">
+          <label>日付</label>
+          <input type="date" id="rec-date">
+        </div>
+        <div class="field">
+          <label>巣箱</label>
+          <select id="rec-box">
+            <option value="1">1号箱</option>
+            <option value="2">2号箱</option>
+            <option value="3">3号箱</option>
+            <option value="4">4号箱</option>
+            <option value="5">5号箱</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>種別</label>
+        <select id="rec-type" onchange="onTypeChange()">
+          <option value="obs">状態・観察</option>
+          <option value="work">給餌・作業</option>
+          <option value="honey">採蜜</option>
+        </select>
+      </div>
+
+      <div id="obs-fields">
+        <div class="field">
+          <label>巣の状態</label>
+          <select id="rec-status">
+            <option value="良好">良好</option>
+            <option value="やや注意">やや注意</option>
+            <option value="要観察">要観察</option>
+            <option value="異常あり">異常あり</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="work-fields" style="display:none;">
+        <div class="field">
+          <label>作業内容</label>
+          <select id="rec-work">
+            <option value="給餌">給餌</option>
+            <option value="巣板交換">巣板交換</option>
+            <option value="治療・投薬">治療・投薬</option>
+            <option value="巣箱清掃">巣箱清掃</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="honey-fields" style="display:none;">
+        <div class="row2">
+          <div class="field">
+            <label>採蜜量（g）</label>
+            <input type="number" id="rec-honey-g" placeholder="500">
+          </div>
+          <div class="field">
+            <label>糖度（Brix）</label>
+            <input type="number" id="rec-brix" placeholder="80">
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>メモ</label>
+        <textarea id="rec-memo" placeholder="気づいたこと、変化など..."></textarea>
+      </div>
+
+      <div class="field">
+        <label>動画リンク（Googleフォト）</label>
+        <input type="url" id="rec-video" placeholder="https://photos.google.com/...">
+        <p class="hint">Googleフォトで動画を開き「リンクをコピー」して貼り付け</p>
+      </div>
+
+      <button class="btn-save" onclick="saveRecord()">記録を保存</button>
+    </div>
+  </div>
+
+  <!-- ログタブ -->
+  <div id="tab-log" style="display:none;">
+    <div class="filter-row">
+      <select id="filter-box" onchange="renderLog()">
+        <option value="all">巣箱：すべて</option>
+        <option value="1">1号箱</option>
+        <option value="2">2号箱</option>
+        <option value="3">3号箱</option>
+        <option value="4">4号箱</option>
+        <option value="5">5号箱</option>
+      </select>
+      <select id="filter-type" onchange="renderLog()">
+        <option value="all">種別：すべて</option>
+        <option value="obs">観察</option>
+        <option value="work">作業</option>
+        <option value="honey">採蜜</option>
+      </select>
+    </div>
+    <div class="card">
+      <div id="log-list"><p class="empty">まだ記録がありません</p></div>
+    </div>
+  </div>
+
+  <!-- まとめタブ -->
+  <div id="tab-summary" style="display:none;">
+    <div class="summary-grid" id="summary-stats"></div>
+    <div class="card" id="honey-card" style="display:none;">
+      <p style="font-size:13px;color:#5F5E5A;margin-bottom:10px;font-weight:500;">採蜜記録</p>
+      <div id="honey-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- タブバー -->
+<nav class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('record', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+    記録する
+  </button>
+  <button class="tab-btn" onclick="switchTab('log', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h6M8 17h4"/></svg>
+    ログ
+  </button>
+  <button class="tab-btn" onclick="switchTab('summary', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V14M9 20V10M14 20V6M19 20V4"/></svg>
+    まとめ
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let records = JSON.parse(localStorage.getItem('hive_diary') || '[]');
+
+document.getElementById('rec-date').value = new Date().toISOString().slice(0,10);
+
+function onTypeChange() {
+  const t = document.getElementById('rec-type').value;
+  document.getElementById('obs-fields').style.display = t === 'obs' ? '' : 'none';
+  document.getElementById('work-fields').style.display = t === 'work' ? '' : 'none';
+  document.getElementById('honey-fields').style.display = t === 'honey' ? '' : 'none';
+}
+
+function switchTab(name, btn) {
+  ['record','log','summary'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t === name ? '' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if(name === 'log') renderLog();
+  if(name === 'summary') renderSummary();
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+function saveRecord() {
+  const type = document.getElementById('rec-type').value;
+  const rec = {
+    id: Date.now(),
+    date: document.getElementById('rec-date').value,
+    box: document.getElementById('rec-box').value,
+    type,
+    memo: document.getElementById('rec-memo').value.trim(),
+    video: document.getElementById('rec-video').value.trim(),
+  };
+  if(type === 'obs') rec.status = document.getElementById('rec-status').value;
+  if(type === 'work') rec.work = document.getElementById('rec-work').value;
+  if(type === 'honey') {
+    rec.honey_g = document.getElementById('rec-honey-g').value;
+    rec.brix = document.getElementById('rec-brix').value;
+  }
+  records.unshift(rec);
+  localStorage.setItem('hive_diary', JSON.stringify(records));
+  document.getElementById('rec-memo').value = '';
+  document.getElementById('rec-video').value = '';
+  if(type === 'honey') {
+    document.getElementById('rec-honey-g').value = '';
+    document.getElementById('rec-brix').value = '';
+  }
+  toast('記録を保存しました！');
+}
+
+function typeLabel(t) { return {obs:'状態・観察',work:'給餌・作業',honey:'採蜜'}[t]||t; }
+function badgeClass(t) { return {obs:'badge-obs',work:'badge-work',honey:'badge-honey'}[t]||''; }
+
+function renderLog() {
+  const fb = document.getElementById('filter-box').value;
+  const ft = document.getElementById('filter-type').value;
+  const list = document.getElementById('log-list');
+  let filtered = records.filter(r =>
+    (fb === 'all' || r.box === fb) &&
+    (ft === 'all' || r.type === ft)
+  );
+  if(!filtered.length) { list.innerHTML = '<p class="empty">記録がありません</p>'; return; }
+  list.innerHTML = filtered.map(r => {
+    let detail = '';
+    if(r.type === 'obs') detail = `状態：${r.status}　`;
+    if(r.type === 'work') detail = `作業：${r.work}　`;
+    if(r.type === 'honey') detail = `${r.honey_g}g${r.brix ? '　糖度：'+r.brix+'Brix' : ''}　`;
+    return `<div class="log-item">
+      <div class="log-meta">
+        <span class="log-date">${r.date}</span>
+        <span class="box-label">${r.box}号箱</span>
+        <span class="badge ${badgeClass(r.type)}">${typeLabel(r.type)}</span>
+      </div>
+      <div class="log-text">${detail}${r.memo||''}</div>
+      ${r.video ? `<a class="video-link" href="${r.video}">▶ 動画を見る</a>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderSummary() {
+  const honeyRecs = records.filter(r => r.type === 'honey');
+  const totalHoney = honeyRecs.reduce((s,r) => s+(parseFloat(r.honey_g)||0), 0);
+  const videoRecs = records.filter(r => r.video);
+  document.getElementById('summary-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${records.length}</div><div class="stat-label">総記録数</div></div>
+    <div class="stat-card"><div class="stat-num">${honeyRecs.length}</div><div class="stat-label">採蜜回数</div></div>
+    <div class="stat-card"><div class="stat-num">${Math.round(totalHoney).toLocaleString()}g</div><div class="stat-label">総採蜜量</div></div>
+    <div class="stat-card"><div class="stat-num">${videoRecs.length}</div><div class="stat-label">動画記録数</div></div>
+  `;
+  if(honeyRecs.length) {
+    document.getElementById('honey-card').style.display = '';
+    document.getElementById('honey-list').innerHTML = honeyRecs.map(r =>
+      `<div class="log-item">
+        <div class="log-meta"><span class="log-date">${r.date}</span><span class="box-label">${r.box}号箱</span></div>
+        <div class="log-text">${r.honey_g}g${r.brix ? '　糖度 '+r.brix+'Brix' : ''}${r.memo ? '　'+r.memo : ''}</div>
+        ${r.video ? `<a class="video-link" href="${r.video}">▶ 動画を見る</a>` : ''}
+      </div>`
+    ).join('');
+  }
+}
+</script>
+</body>
+</html>
